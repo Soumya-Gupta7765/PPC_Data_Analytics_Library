@@ -108,14 +108,14 @@ Found 4 distinct grades:
 ```mermaid
 classDiagram
     class DataSet {
-        -columns_: vector~unique_ptr~ColumnBase~~
-        -row_count_: size_t
+        -vector columns_
+        -size_t row_count_
         +addColumn(col)
         +getColumn(name)
         +hasColumn(name)
         +selectRows(indices)
-        +groupBy(column_name) map~string, DataSet~
-        +filterBy~T~(name, predicate)
+        +groupBy(column_name)
+        +filterBy(name, predicate)
         +loadCSV(path)
         +print(os)
     }
@@ -130,33 +130,43 @@ classDiagram
         +selectRows(indices)
     }
 
-    class Column~T~ {
-        -data_: vector~T~
+    class Column {
+        -vector data_
+        +at(i)
+        +addValue(val)
+        +getAsDouble(i)
     }
 
     class StatisticsEngine {
-        -analyzers_: map~string, unique_ptr~IAnalyzer~~
+        -map analyzers_
         +registerAnalyzer(analyzer)
         +run(name, col)
         +runAll(col)
     }
 
+    class IAnalyzer {
+        <<interface>>
+        +analyze(col)
+        +name()
+    }
+
     class IOFactory {
-        +createImporter(path)$
-        +createExporter(path)$
+        +createImporter(path)
+        +createExporter(path)
     }
 
     class Visualizer {
-        +histogram(col, bins, os)$
-        +summary(dataset, engine, os)$
+        +histogram(col, bins, os)
+        +summary(dataset, engine, os)
     }
 
-    ColumnBase <|-- Column~T~
-    DataSet o-- ColumnBase : owns
+    ColumnBase <|-- Column : implements
+    DataSet o-- ColumnBase : owns unique_ptr
+    StatisticsEngine o-- IAnalyzer : registers
     StatisticsEngine ..> ColumnBase : analyzes
     Visualizer ..> DataSet : summarizes
     Visualizer ..> ColumnBase : charts
-    IOFactory ..> DataSet : loads/saves
+    IOFactory ..> DataSet : loads / saves
 ```
 
 ---
@@ -239,13 +249,13 @@ Generates a text-based frequency distribution for any numeric column.
    - Filters out missing values (`isMissing(i)`) and `NaN` entries.
    - Rejects infinite values with `std::domain_error`.
 2. **Range Computation**:
-   - Finds minimum ($v_{min}$) and maximum ($v_{max}$) among valid values.
-   - *Edge case*: If $v_{min} == v_{max}$, renders a single unified bar.
+   - Finds minimum ($v_{\text{min}}$) and maximum ($v_{\text{max}}$) among valid values.
+   - *Edge case*: If $v_{\text{min}} == v_{\text{max}}$, renders a single unified bar.
 3. **Bin Partitioning**:
    - Calculates uniform width:
-     $$\text{bin\_width} = \frac{v_{max} - v_{min}}{\text{bins}}$$
+     $$\text{bin width} = \frac{v_{\text{max}} - v_{\text{min}}}{\text{bins}}$$
    - Maps each value $x$ to bucket index $b$:
-     $$b = \min\left(\left\lfloor \frac{x - v_{min}}{\text{bin\_width}} \right\rfloor, \; \text{bins} - 1\right)$$
+     $$b = \min\left(\left\lfloor \frac{x - v_{\text{min}}}{\text{bin width}} \right\rfloor, \; \text{bins} - 1\right)$$
 4. **Text Bar Rendering**:
    - Formats range labels `[low - high]` and prints an asterisk `*` for each observation in that bucket.
 
