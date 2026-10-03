@@ -1,0 +1,15 @@
+bin/
+obj/
+*.exe
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.pdb
+*.ilk
+test_*.csv
+test_*.json
+data/adults.json
+.vscode/
+.idea/
