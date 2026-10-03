@@ -350,9 +350,49 @@ Max                 25.0000         95.0000
 
 ```text
 PPC-Data_analytics_library/
-├── Makefile                # Build system
-├── main.cpp                # Demo application
-├── include/analytics/      # Public headers (DataSet, Column, Analyzers, Visualizer, etc.)
-├── src/                    # Source implementations (.cpp)
-└── data/                   # Sample datasets (sample.csv)
+├── Makefile                            # Direct g++ build configuration (demo & test targets)
+├── README.md                           # Documentation, architecture, UML diagrams & guides
+├── .gitignore                          # Git ignore rules for build artifacts & temp files
+├── main.cpp                            # End-to-end integration demo application
+│
+├── include/analytics/                  # Public API Header Files
+│   ├── ColumnBase.h                    # Abstract column interface (RTTI, missing checks, clone)
+│   ├── Column.h                        # Templated column storage (int, double, string)
+│   ├── DataSet.h                       # Tabular data model (ownership, groupBy, filtering)
+│   ├── Filter.h                        # Predicate-based lambda filtering rule container
+│   ├── IAnalyzer.h                     # Statistical strategy interface
+│   ├── Analyzers.h                     # Statistical metric strategies (mean, median, stddev, sum, etc.)
+│   ├── StatisticsEngine.h              # Statistical strategy registry and dispatcher
+│   ├── IImporter.h                     # Data importer interface
+│   ├── CsvImporter.h                   # RFC-4180 CSV parser and automated type inference
+│   ├── IExporter.h                     # Data exporter interface
+│   ├── JsonExporter.h                  # RFC-8259 JSON serializer with schema & null formatting
+│   ├── CsvExporter.h                   # RFC-4180 CSV serializer with quote escaping
+│   ├── IOFactory.h                     # Extension-based factory for importers and exporters
+│   └── Visualizer.h                    # In-terminal ASCII histograms & describe summary tables
+│
+├── src/                                # Library Source Implementations
+│   ├── DataSet.cpp                     # Table management, validation invariants & groupBy partitioning
+│   ├── Analyzers.cpp                   # Implementation of statistical metrics & Welford recurrence
+│   ├── StatisticsEngine.cpp            # Strategy registration map and execution engine
+│   ├── CsvImporter.cpp                 # 4-state CSV parser, UTF-8 BOM stripper & type inference
+│   ├── JsonExporter.cpp                # JSON string escaping, numeric formatting & serialization
+│   ├── CsvExporter.cpp                 # CSV field quoting, double-quote escaping & row output
+│   ├── IOFactory.cpp                   # File extension parsing and polymorphic factory dispatch
+│   └── Visualizer.cpp                  # Bucket binning, ASCII bar rendering & describe calculation
+│
+├── tests/                              # Comprehensive Unit & Integration Test Suite
+│   ├── doctest.h                       # Lightweight C++17 testing framework
+│   ├── test_main.cpp                   # Test runner entrypoint (DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN)
+│   ├── test_column.cpp                 # Unit tests for Column<T> (types, bounds, conversions)
+│   ├── test_dataset.cpp                # Unit tests for DataSet (invariants, deep copy, print)
+│   ├── test_analyzers.cpp              # Unit tests for StatisticsEngine, Analyzers & Visualizer
+│   ├── test_filter.cpp                 # Unit tests for Filter<T> and predicate matching
+│   ├── test_io.cpp                     # Unit tests for CSV/JSON importers, exporters & round-trip
+│   └── test_groupby.cpp                # Unit tests for DataSet::groupBy and group-level metrics
+│
+└── data/                               # Data Directory
+    ├── sample.csv                      # Sample input CSV dataset
+    ├── adults.json                     # Generated JSON output of filtered data
+    └── adults.csv                      # Generated CSV output of filtered data
 ```
