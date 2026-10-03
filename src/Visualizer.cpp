@@ -159,6 +159,8 @@ void describe(
     struct SummaryStats {
         string count_str;
         string mean_str;
+        string median_str;
+        string mode_str;
         string std_str;
         string min_str;
         string q25_str;
@@ -178,6 +180,8 @@ void describe(
         if (valid.empty()) {
             stats.count_str = "0";
             stats.mean_str = "NA";
+            stats.median_str = "NA";
+            stats.mode_str = "NA";
             stats.std_str = "NA";
             stats.min_str = "NA";
             stats.q25_str = "NA";
@@ -220,6 +224,14 @@ void describe(
             stats.q50_str = oss_q50.str();
             stats.q75_str = oss_q75.str();
             stats.max_str = oss_max.str();
+
+            stats.median_str = oss_q50.str();
+
+            ModeAnalyzer mode_analyzer;
+            double mode_val = mode_analyzer.analyze(col);
+            ostringstream oss_mode;
+            oss_mode << fixed << setprecision(4) << mode_val;
+            stats.mode_str = oss_mode.str();
         }
         col_stats.push_back(stats);
     }
@@ -242,12 +254,14 @@ void describe(
         os << "\n";
     };
 
-    printRow("Count", &SummaryStats::count_str);
-    printRow("Mean",  &SummaryStats::mean_str);
-    printRow("Std",   &SummaryStats::std_str);
-    printRow("Min",   &SummaryStats::min_str);
-    printRow("25%",   &SummaryStats::q25_str);
-    printRow("50%",   &SummaryStats::q50_str);
-    printRow("75%",   &SummaryStats::q75_str);
-    printRow("Max",   &SummaryStats::max_str);
+    printRow("Count",  &SummaryStats::count_str);
+    printRow("Mean",   &SummaryStats::mean_str);
+    printRow("Median", &SummaryStats::median_str);
+    printRow("Mode",   &SummaryStats::mode_str);
+    printRow("Std",    &SummaryStats::std_str);
+    printRow("Min",    &SummaryStats::min_str);
+    printRow("25%",    &SummaryStats::q25_str);
+    printRow("50%",    &SummaryStats::q50_str);
+    printRow("75%",    &SummaryStats::q75_str);
+    printRow("Max",    &SummaryStats::max_str);
 }
