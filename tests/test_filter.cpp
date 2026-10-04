@@ -84,3 +84,117 @@ TEST_CASE("Filter string column") {
     CHECK(l_cities.getColumn("City").valueAsString(0) == "London");
     CHECK(l_cities.getColumn("Code").getAsDouble(0) == 102.0);
 }
+
+TEST_CASE("DynamicFilter numeric operators") {
+    DataSet ds;
+    ds.addColumn(std::make_unique<Column<std::string>>("Name", std::vector<std::string>{"Alice", "Bob", "Charlie", "David"}));
+    ds.addColumn(std::make_unique<Column<int>>("Age", std::vector<int>{15, 20, 25, 30}));
+    ds.addColumn(std::make_unique<Column<double>>("Score", std::vector<double>{70.5, 85.0, 92.5, 60.0}));
+
+    // Greater (>)
+    DataSet gt = ds.filter("Age", ">", 20.0);
+    CHECK(gt.rowCount() == 2);
+    CHECK(gt.getColumn("Age").getAsDouble(0) == 25.0);
+    CHECK(gt.getColumn("Age").getAsDouble(1) == 30.0);
+
+    // GreaterEqual (>=)
+    DataSet gte = ds.filter("Age", ">=", 20.0);
+    CHECK(gte.rowCount() == 3);
+
+    // Less (<)
+    DataSet lt = ds.filter("Age", "<", 25.0);
+    CHECK(lt.rowCount() == 2);
+    CHECK(lt.getColumn("Age").getAsDouble(0) == 15.0);
+    CHECK(lt.getColumn("Age").getAsDouble(1) == 20.0);
+
+    // LessEqual (<=)
+    DataSet lte = ds.filter("Age", "<=", 20.0);
+    CHECK(lte.rowCount() == 2);
+
+    // Equal (==) on double
+    DataSet eq = ds.filter("Score", "==", 85.0);
+    CHECK(eq.rowCount() == 1);
+    CHECK(eq.getColumn("Name").valueAsString(0) == "Bob");
+
+    // NotEqual (!=)
+    DataSet neq = ds.filter("Age", "!=", 20.0);
+    CHECK(neq.rowCount() == 3);
+}
+
+TEST_CASE("DynamicFilter expression string queries") {
+    DataSet ds;
+    ds.addColumn(std::make_unique<Column<std::string>>("Name", std::vector<std::string>{"Alice", "Bob", "Charlie"}));
+    ds.addColumn(std::make_unique<Column<int>>("Age", std::vector<int>{21, 17, 25}));
+    ds.addColumn(std::make_unique<Column<std::string>>("Grade", std::vector<std::string>{"A", "C", "B"}));
+
+    // Natural expressions
+    DataSet expr1 = ds.filter("Age > 18");
+    CHECK(expr1.rowCount() == 2);
+
+    DataSet expr2 = ds.filter("Age <= 17");
+    CHECK(expr2.rowCount() == 1);
+    CHECK(expr2.getColumn("Name").valueAsString(0) == "Bob");
+
+    DataSet expr3 = ds.filter("Grade == A");
+    CHECK(expr3.rowCount() == 1);
+    CHECK(expr3.getColumn("Name").valueAsString(0) == "Alice");
+
+    // Quoted string value
+    DataSet expr4 = ds.filter("Grade == 'B'");
+    CHECK(expr4.rowCount() == 1);
+    CHECK(expr4.getColumn("Name").valueAsString(0) == "Charlie");
+
+    // Spacing variations
+    DataSet expr5 = ds.filter("   Age   >=   21   ");
+    CHECK(expr5.rowCount() == 2);
+}
+
+TEST_CASE("DynamicFilter on string columns") {
+    DataSet ds;
+    ds.addColumn(std::make_unique<Column<std::string>>("City", std::vector<std::string>{"Amsterdam", "Berlin", "Chicago", "Dublin"}));
+
+    // Equality and Inequality
+    CHECK(ds.filter("City", "==", "Berlin").rowCount() == 1);
+    CHECK(ds.filter("City", "!=", "Berlin").rowCount() == 3);
+
+    // Lexicographical ordering
+    DataSet lt = ds.filter("City", "<", "Chicago");
+    CHECK(lt.rowCount() == 2);
+    CHECK(lt.getColumn("City").valueAsString(0) == "Amsterdam");
+    CHECK(lt.getColumn("City").valueAsString(1) == "Berlin");
+}
+
+TEST_CASE("DynamicFilter error validation and edge cases") {
+    DataSet ds;
+    ds.addColumn(std::make_unique<Column<int>>("Age", std::vector<int>{20, 30}));
+    ds.addColumn(std::make_unique<Column<std::string>>("Name", std::vector<std::string>{"A", "B"}));
+
+    // Non-existent column
+    CHECK_THROWS_AS(ds.filter("NonExistent > 10"), std::out_of_range);
+
+    // Unsupported operator
+    CHECK_THROWS_AS(ds.filter("Age", "~", 20.0), std::invalid_argument);
+
+    // Comparing text value against numeric column
+    CHECK_THROWS_AS(ds.filter("Age > abc"), std::invalid_argument);
+
+    // Malformed expression
+    CHECK_THROWS_AS(ds.filter(""), std::invalid_argument);
+    CHECK_THROWS_AS(ds.filter("Age"), std::invalid_argument);
+    CHECK_THROWS_AS(ds.filter("Age >"), std::invalid_argument);
+    CHECK_THROWS_AS(ds.filter("> 20"), std::invalid_argument);
+
+    // Empty column name in DynamicFilter constructor
+    CHECK_THROWS_AS(DynamicFilter("", FilterOp::Greater, "10"), std::invalid_argument);
+}
+
+TEST_CASE("DynamicFilter excludes missing and NaN values") {
+    DataSet ds;
+    double nan_val = std::numeric_limits<double>::quiet_NaN();
+    ds.addColumn(std::make_unique<Column<double>>("Score", std::vector<double>{85.0, nan_val, 95.0, nan_val}));
+
+    DataSet result = ds.filter("Score > 80.0");
+    CHECK(result.rowCount() == 2);
+    CHECK(result.getColumn("Score").getAsDouble(0) == 85.0);
+    CHECK(result.getColumn("Score").getAsDouble(1) == 95.0);
+}

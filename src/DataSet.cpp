@@ -146,3 +146,30 @@ void DataSet::loadCSV(const string& filename) {
     *this = move(loaded);
 }
 
+DataSet DataSet::filter(const DynamicFilter& dynamic_filter) const {
+    if (!hasColumn(dynamic_filter.columnName())) {
+        throw out_of_range("Column '" + dynamic_filter.columnName() + "' not found in DataSet");
+    }
+    const auto& col = getColumn(dynamic_filter.columnName());
+    vector<size_t> matched_indices;
+    matched_indices.reserve(row_count_);
+    for (size_t i = 0; i < row_count_; ++i) {
+        if (dynamic_filter.matches(col, i)) {
+            matched_indices.push_back(i);
+        }
+    }
+    return selectRows(matched_indices);
+}
+
+DataSet DataSet::filter(const string& column_name, const string& op, const string& value) const {
+    return filter(DynamicFilter(column_name, op, value));
+}
+
+DataSet DataSet::filter(const string& column_name, const string& op, double value) const {
+    return filter(DynamicFilter(column_name, op, value));
+}
+
+DataSet DataSet::filter(const string& expression) const {
+    return filter(DynamicFilter::fromExpression(expression));
+}
+

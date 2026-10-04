@@ -63,6 +63,12 @@ public:
         return filter<T>(Filter<T>(column_name, std::function<bool(const T&)>(predicate)));
     }
 
+    // Dynamic filter overloads (runtime user-specified conditions)
+    DataSet filter(const DynamicFilter& dynamic_filter) const;
+    DataSet filter(const std::string& column_name, const std::string& op, const std::string& value) const;
+    DataSet filter(const std::string& column_name, const std::string& op, double value) const;
+    DataSet filter(const std::string& expression) const;
+
     void loadCSV(const std::string& filename);
 };
 

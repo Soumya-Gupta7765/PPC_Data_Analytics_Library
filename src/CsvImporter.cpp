@@ -28,7 +28,7 @@ DataSet CsvImporter::load(const string& path) const {
         throw runtime_error("CSV file is empty: " + path);
     }
 
-    // Strip UTF-8 BOM if present
+    
     size_t start_idx = 0;
     if (content.size() >= 3 &&
         static_cast<unsigned char>(content[0]) == 0xEF &&
@@ -37,7 +37,7 @@ DataSet CsvImporter::load(const string& path) const {
         start_idx = 3;
     }
 
-    // Parse CSV rows
+
     vector<vector<string>> rows;
     vector<string> current_row;
     string current_field;
@@ -250,11 +250,10 @@ DataSet CsvImporter::load(const string& path) const {
         }
 
         if (non_empty_count == 0) {
-            // All cells empty -> string column
             vector<string> col_vals(num_data_rows, "");
             dataset.addColumn(make_unique<Column<string>>(col_name, move(col_vals)));
         } else if (all_int && !has_missing) {
-            // All values valid integers and no missing values -> Column<int>
+            
             vector<int> col_vals;
             col_vals.reserve(num_data_rows);
             for (size_t r = 1; r < rows.size(); ++r) {
@@ -265,7 +264,6 @@ DataSet CsvImporter::load(const string& path) const {
             }
             dataset.addColumn(make_unique<Column<int>>(col_name, move(col_vals)));
         } else if (all_double) {
-            // Numeric column with missing values or floating point numbers -> Column<double>
             vector<double> col_vals;
             col_vals.reserve(num_data_rows);
             for (size_t r = 1; r < rows.size(); ++r) {
@@ -280,7 +278,7 @@ DataSet CsvImporter::load(const string& path) const {
             }
             dataset.addColumn(make_unique<Column<double>>(col_name, move(col_vals)));
         } else {
-            // String column
+
             vector<string> col_vals;
             col_vals.reserve(num_data_rows);
             for (size_t r = 1; r < rows.size(); ++r) {
