@@ -21,33 +21,37 @@ int main() {
         assert(groups.find("C") != groups.end());
         assert(groups.find("D") != groups.end());
 
-        // Grade A: Alice (92.5) + David (65.0) + optional Sanchit (100.0)
+        // Grade A: Alice (92.5) + Zaheer (90.0) + Sanchit (100.0) -> 3 rows, mean = 94.1667, sum = 282.5
         const auto& groupA = groups.at("A");
-        assert(groupA.rowCount() >= 2);
+        assert(groupA.rowCount() == 3);
         assert(groupA.colCount() == ds.colCount());
         double meanA = engine.run("mean", groupA.getColumn("Score"));
         double sumA  = engine.run("sum", groupA.getColumn("Score"));
-        if (groupA.rowCount() == 2) {
-            assert(fabs(meanA - 78.75) < 1e-6);
-            assert(fabs(sumA - 157.5) < 1e-6);
-        } else if (groupA.rowCount() == 3) {
-            assert(fabs(meanA - 85.8333) < 1e-3);
-            assert(fabs(sumA - 257.5) < 1e-3);
-        }
+        assert(fabs(meanA - 94.1667) < 1e-3);
+        assert(fabs(sumA - 282.5) < 1e-3);
 
-        // Grade B: Charlie (88.5) + Soumya (100.0) -> 2 rows, mean = 94.25, sum = 188.5
+        // Grade B: Mitansu (85.0) + Soumya (88.0) -> 2 rows, mean = 86.5, sum = 173.0
         const auto& groupB = groups.at("B");
         assert(groupB.rowCount() == 2);
         double meanB = engine.run("mean", groupB.getColumn("Score"));
-        assert(fabs(meanB - 94.25) < 1e-6);
+        double sumB  = engine.run("sum", groupB.getColumn("Score"));
+        assert(fabs(meanB - 86.5) < 1e-6);
+        assert(fabs(sumB - 173.0) < 1e-6);
 
-        // Grade C: Bob (78.0) -> 1 row
+        // Grade C: Bob (75.0) -> 1 row, mean = 75.0, sum = 75.0
         const auto& groupC = groups.at("C");
         assert(groupC.rowCount() == 1);
+        double meanC = engine.run("mean", groupC.getColumn("Score"));
+        assert(fabs(meanC - 75.0) < 1e-6);
 
-        // Grade D: Emma (95.0) -> 1 row
+        // Grade D: Emma (65.0) -> 1 row, mean = 65.0, sum = 65.0
         const auto& groupD = groups.at("D");
         assert(groupD.rowCount() == 1);
+        double meanD = engine.run("mean", groupD.getColumn("Score"));
+        assert(fabs(meanD - 65.0) < 1e-6);
+
+        // Verify hierarchy: Grade A > Grade B > Grade C > Grade D
+        assert(meanA > meanB && meanB > meanC && meanC > meanD);
 
         // 2. Exception handling on non-existent column
         bool caught = false;

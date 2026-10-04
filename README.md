@@ -51,11 +51,11 @@ make clean
 Loading dataset from: data/sample.csv
 Name, Age, Score, Grade, H_score
 Alice, 21, 92.5, A, 5
-Bob, 17, 78, C, 12
-Mitansu, 25, 88.5, B, 13
-Zaheer, 100, 65, A, 15
-Emma, 22, 95, D, 45
-Soumya, 19, 100, B, 100
+Bob, 17, 75, C, 12
+Mitansu, 25, 85, B, 13
+Zaheer, 100, 90, A, 15
+Emma, 22, 65, D, 45
+Soumya, 19, 88, B, 100
 Sanchit, 100, 100, A, 100
 
 Mean age: 43.4286
@@ -69,10 +69,10 @@ Filtered from 7 rows down to 6 rows.
 Filtered data is as follows: 
 Name, Age, Score, Grade, H_score
 Alice, 21, 92.5, A, 5
-Mitansu, 25, 88.5, B, 13
-Zaheer, 100, 65, A, 15
-Emma, 22, 95, D, 45
-Soumya, 19, 100, B, 100
+Mitansu, 25, 85, B, 13
+Zaheer, 100, 90, A, 15
+Emma, 22, 65, D, 45
+Soumya, 19, 88, B, 100
 Sanchit, 100, 100, A, 100
 
 --- Visualizations (Histograms) ---
@@ -87,8 +87,8 @@ Score distribution
 
 65.00 - 73.75      | * (1)
 73.75 - 82.50      | * (1)
-82.50 - 91.25      | * (1)
-91.25 - 100.00     | **** (4)
+82.50 - 91.25      | *** (3)
+91.25 - 100.00     | ** (2)
 
 H_score distribution
 
@@ -101,27 +101,29 @@ H_score distribution
 Statistic              Age           Score         H_score
 ----------------------------------------------------------
 Count                    7               7               7
-Mean               43.4286         88.4286         41.4286
-Median             22.0000         92.5000         15.0000
-Mode              100.0000        100.0000        100.0000
-Std                38.7249         12.8141         41.9796
+Mean               43.4286         85.0714         41.4286
+Median             22.0000         88.0000         15.0000
+Mode              100.0000         65.0000        100.0000
+Std                38.7249         11.6563         41.9796
 Min                17.0000         65.0000          5.0000
-25%                20.0000         83.2500         12.5000
-50%                22.0000         92.5000         15.0000
-75%                62.5000         97.5000         72.5000
+25%                20.0000         80.0000         12.5000
+50%                22.0000         88.0000         15.0000
+75%                62.5000         91.2500         72.5000
 Max               100.0000        100.0000        100.0000
 
 --- Group By Demonstration (Grade) ---
 Found 4 distinct grades:
-  - Grade [A]: 3 student(s), Mean Score = 85.8333, Sum Score = 257.5
-  - Grade [B]: 2 student(s), Mean Score = 94.25, Sum Score = 188.5
-  - Grade [C]: 1 student(s), Mean Score = 78, Sum Score = 78
-  - Grade [D]: 1 student(s), Mean Score = 95, Sum Score = 95
+  - Grade [A]: 3 student(s), Mean Score = 94.1667, Sum Score = 282.5
+  - Grade [B]: 2 student(s), Mean Score = 86.5, Sum Score = 173
+  - Grade [C]: 1 student(s), Mean Score = 75, Sum Score = 75
+  - Grade [D]: 1 student(s), Mean Score = 65, Sum Score = 65
 ```
 
 ---
 
 ## Architecture Overview
+
+### 1. Structural Class Diagram (OOP Design Patterns)
 
 ```mermaid
 classDiagram
@@ -199,6 +201,52 @@ classDiagram
     Visualizer ..> DataSet : summarizes
     Visualizer ..> ColumnBase : charts
     IOFactory ..> DataSet : loads / saves
+```
+
+### 2. Behavioral Sequence Diagram (Pipeline Execution Flow)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Client / main.cpp
+    participant Importer as CsvImporter
+    participant DS as DataSet
+    participant Filter as DynamicFilter
+    participant Engine as StatisticsEngine
+    participant Vis as Visualizer
+    participant Exporter as JsonExporter / CsvExporter
+
+    Note over Client, Importer: Step 1: Ingestion & Polymorphic Type Inference
+    Client->>Importer: load("data/sample.csv")
+    Importer->>Importer: Strip UTF-8 BOM, Parse RFC-4180
+    Importer->>Importer: Infer Column<int>, Column<double>, Column<string>
+    Importer-->>Client: return DataSet
+
+    Note over Client, Filter: Step 2: Dynamic Runtime Filtering
+    Client->>DS: filter("Age > 18")
+    DS->>Filter: fromExpression("Age > 18")
+    loop For each row in DataSet
+        DS->>Filter: matches(column, row_index)
+        Filter-->>DS: boolean (match / no match)
+    end
+    DS-->>Client: return filtered DataSet (non-destructive)
+
+    Note over Client, Engine: Step 3: Statistical Analysis & GroupBy
+    Client->>Engine: run("mean", getColumn("Age"))
+    Engine->>Engine: Dispatch to MeanAnalyzer
+    Engine-->>Client: return metric value (43.4286)
+    Client->>DS: groupBy("Grade")
+    DS-->>Client: return map<string, DataSet>
+
+    Note over Client, Vis: Step 4: Terminal Diagnostics & Visualization
+    Client->>Vis: summary(ds, engine, cout)
+    Vis-->>Client: render 10-point describe table
+    Client->>Vis: histogramAll(ds, 4, cout)
+    Vis-->>Client: render ASCII distribution buckets
+
+    Note over Client, Exporter: Step 5: Serialization & Export
+    Client->>Exporter: save(filtered, "data/adults.json")
+    Exporter-->>Client: write JSON file
 ```
 
 ---
