@@ -105,19 +105,110 @@ int main(int argc, char* argv[]) {
         cout << "\n--- Statistical Summary (describe) ---\n";
         Visualizer::summary(ds, engine, cout);
 
-        // 8. Group By Demonstration
-        if (ds.hasColumn("Grade") && ds.hasColumn("Score")) {
-            cout << "\n--- Group By Demonstration (Grade) ---\n";
-            auto groups = ds.groupBy("Grade");
-            cout << "Found " << groups.size() << " distinct grades:\n";
+        // 8. Dynamic Group By Demonstration
+        cout << "\n--- Dynamic GroupBy Demonstration ---\n";
 
-            for (const auto& [grade, group_ds] : groups) {
-                double mean_score = engine.run("mean", group_ds.getColumn("Score"));
-                double sum_score  = engine.run("sum", group_ds.getColumn("Score"));
-                cout << "  - Grade [" << grade << "]: "
-                     << group_ds.rowCount() << " student(s), "
-                     << "Mean Score = " << mean_score << ", "
-                     << "Sum Score = " << sum_score << '\n';
+        // Step 1: Segregate string columns and numeric columns dynamically
+        vector<string> string_cols;
+        vector<string> numeric_cols;
+
+        for (const auto& name : ds.columnNames()) {
+            const auto& col = ds.getColumn(name);
+            if (!col.isNumeric()) {
+                string_cols.push_back(name);
+            } else {
+                numeric_cols.push_back(name);
+            }
+        }
+
+        if (string_cols.empty()) {
+            cout << "No string/categorical columns found in this dataset for GroupBy.\n";
+        } else {
+            // Step 2: Display all string columns
+            cout << "Available string/categorical columns to group by: [ ";
+            for (const auto& name : string_cols) {
+                cout << name << " ";
+            }
+            cout << "]\n";
+
+            // Step 3: Let user choose the string column
+            string default_group_col = string_cols.back();
+            for (const auto& col_name : string_cols) {
+                if (col_name == "Grade" || col_name == "Species") {
+                    default_group_col = col_name;
+                    break;
+                }
+            }
+            string chosen_group_col;
+
+            while (true) {
+                cout << "Enter column name to group by [Default: " << default_group_col << "]: ";
+                string input;
+                if (!getline(cin, input) || input.empty()) {
+                    chosen_group_col = default_group_col;
+                    break;
+                }
+
+                // Validate that user entered a valid string column
+                bool valid = false;
+                for (const auto& col_name : string_cols) {
+                    if (col_name == input) {
+                        valid = true;
+                        break;
+                    }
+                }
+
+                if (valid) {
+                    chosen_group_col = input;
+                    break;
+                } else {
+                    cout << "⚠️ '" << input << "' is not a valid string column. Please choose from: [ ";
+                    for (const auto& name : string_cols) cout << name << " ";
+                    cout << "]\n";
+                }
+            }
+
+            // Step 4: Let user pick which numeric column to aggregate
+            string chosen_num_col = numeric_cols.empty() ? "" : numeric_cols.front();
+            if (!numeric_cols.empty()) {
+                cout << "Available numeric columns to aggregate: [ ";
+                for (const auto& name : numeric_cols) cout << name << " ";
+                cout << "]\n";
+
+                for (const auto& col_name : numeric_cols) {
+                    if (col_name == "Score" || col_name == "PetalLengthCm") {
+                        chosen_num_col = col_name;
+                        break;
+                    }
+                }
+
+                cout << "Enter numeric column to aggregate [Default: " << chosen_num_col << "]: ";
+                string num_input;
+                if (getline(cin, num_input) && !num_input.empty()) {
+                    for (const auto& col_name : numeric_cols) {
+                        if (col_name == num_input) {
+                            chosen_num_col = col_name;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Step 5: Execute dynamic GroupBy on the user's chosen column
+            cout << "\nGrouping dataset by [" << chosen_group_col << "]..." << endl;
+            auto groups = ds.groupBy(chosen_group_col);
+            cout << "Found " << groups.size() << " distinct categories in [" << chosen_group_col << "]:\n";
+
+            for (const auto& [category, group_ds] : groups) {
+                cout << "  - [" << category << "]: " << group_ds.rowCount() << " row(s)";
+                if (!chosen_num_col.empty() && group_ds.hasColumn(chosen_num_col)) {
+                    const auto& num_col = group_ds.getColumn(chosen_num_col);
+                    double mean_val = engine.run("mean", num_col);
+                    double sum_val  = engine.run("sum", num_col);
+                    cout << " | Mean " << chosen_num_col << " = " << mean_val
+                         << " | Sum " << chosen_num_col << " = " << sum_val;
+                }
+                cout << '\n';
             }
         }
 

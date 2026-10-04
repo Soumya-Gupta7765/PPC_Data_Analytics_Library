@@ -111,12 +111,18 @@ Min                17.0000         65.0000          5.0000
 75%                62.5000         91.2500         72.5000
 Max               100.0000        100.0000        100.0000
 
---- Group By Demonstration (Grade) ---
-Found 4 distinct grades:
-  - Grade [A]: 3 student(s), Mean Score = 94.1667, Sum Score = 282.5
-  - Grade [B]: 2 student(s), Mean Score = 86.5, Sum Score = 173
-  - Grade [C]: 1 student(s), Mean Score = 75, Sum Score = 75
-  - Grade [D]: 1 student(s), Mean Score = 65, Sum Score = 65
+--- Dynamic GroupBy Demonstration ---
+Available string/categorical columns to group by: [ Name Grade ]
+Enter column name to group by [Default: Grade]: Grade
+Available numeric columns to aggregate: [ Age Score H_score ]
+Enter numeric column to aggregate [Default: Score]: Score
+
+Grouping dataset by [Grade]...
+Found 4 distinct categories in [Grade]:
+  - [A]: 3 row(s) | Mean Score = 94.1667 | Sum Score = 282.5
+  - [B]: 2 row(s) | Mean Score = 86.5 | Sum Score = 173
+  - [C]: 1 row(s) | Mean Score = 75 | Sum Score = 75
+  - [D]: 1 row(s) | Mean Score = 65 | Sum Score = 65
 ```
 
 ---
